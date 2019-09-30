@@ -1,25 +1,24 @@
 ---
-- name: "MEDIUM | RHEL-07-010030 | PATCH | The Red Hat Enterprise Linux operating system must display the Standard Mandatory DoD Notice and Consent Banner before granting local or remote access to the system via a graphical user logon."
-  command: "true"
-  changed_when: no
+### RHEL-07-010030 | RHEL-07-010040 combined as related tasks in regards to a config file no other content will be in.
+- name: "MEDIUM | RHEL-07-010030 | RHEL-07-010040 | PATCH | The Red Hat Enterprise Linux operating system must display the Standard Mandatory DoD Notice and Consent Banner before granting local or remote access to the system via a graphical user logon."
+  copy:
+      dest: /etc/dconf/db/local.d/01-banner-message
+      content: |
+          [org/gnome/login-screen]
+          banner-message-enable=true
+          banner-message-text='{{ rhel7stig_logon_banner | replace(newline, "\n") }}'
+      mode: '0644'
+  vars:
+      newline: "\n"
+  notify: dconf update
   when:
-      - rhel7stig_gui
+      - rhel7stig_dconf_available
       - rhel_07_010030
-  tags:
-      - RHEL-07-010030
-      - dod_logon_banner
-      - notimplemented
-
-- name: "MEDIUM | RHEL-07-010040 | PATCH | The Red Hat Enterprise Linux operating system must display the approved Standard Mandatory DoD Notice and Consent Banner before granting local or remote access to the system via a graphical user logon."
-  command: "true"
-  changed_when: no
-  when:
-      - rhel7stig_gui
       - rhel_07_010040
   tags:
-      - RHEL-07-010040
+      - RHEL-07-010030
+      - RHEL_07_010040
       - dod_logon_banner
-      - notimplemented
 
 - name: "MEDIUM | RHEL-07-010050 | PATCH | The Red Hat Enterprise Linux operating system must display the Standard Mandatory DoD Notice and Consent Banner before granting local or remote access to the system via a command line user logon."
   copy:
@@ -40,92 +39,146 @@
       - dod_logon_banner
 
 - name: "MEDIUM | RHEL-07-010060 | PATCH | The Red Hat Enterprise Linux operating system must enable a user session lock until that user re-establishes access using established identification and authentication procedures."
-  command: "true"
-  changed_when: no
+  copy:
+      dest: /etc/dconf/db/local.d/00-screensaver_rhel_07_010060
+      content: |
+        [org/gnome/desktop/screensaver]
+        lock-enabled=true
+      mode: '0644'
+  notify: dconf update
   when:
-      - rhel7stig_gui
+      - rhel7stig_dconf_available
       - rhel_07_010060
   tags:
       - RHEL-07-010060
-      - notimplemented
 
 - name: "MEDIUM | RHEL-07-010061 | PATCH | The Red Hat Enterprise Linux operating system must uniquely identify and must authenticate users using multifactor authentication via a graphical user logon."
-  command: "true"
-  changed_when: no
+  copy:
+      dest: /etc/dconf/db/local.d/00-defaults_rhel_07_010061
+      content: |
+          [org/gnome/login-screen]
+          enable-smartcard-authentication=true
+      mode: '0644'
+  notify: dconf update
   when:
-      - rhel7stig_gui
+      - rhel7stig_dconf_available
       - rhel_07_010061
   tags:
       - RHEL-07-010061
-      - notimplemented
+
+- name: "MEDIUM | RHEL-07-010062 | The Red Hat Enterprise Linux operating system must prevent a user from overriding the screensaver lock-enabled setting for the graphical user interface."
+  copy:
+      dest: /etc/dconf/db/local.d/locks/session_rhel_07_010062
+      content: |
+          /org/gnome/desktop/screensaver/lock-enabled
+      mode: '0644'
+  notify: dconf update
+  when:
+      - rhel7stig_dconf_available
+      - rhel_07_010062
+  tags:
+      - RHEL-07-010062
 
 - name: "MEDIUM | RHEL-07-010070 | PATCH | The Red Hat Enterprise Linux operating system must initiate a screensaver after a 15-minute period of inactivity for graphical user interfaces."
-  command: "true"
-  changed_when: no
+  copy:
+      dest: /etc/dconf/db/local.d/00-screensaver_rhel_07_010070
+      content: |
+          [org/gnome/desktop/session]
+          idle-delay=uint32 900
+      mode: '0644'
+  notify: dconf update
   when:
-      - rhel7stig_gui
+      - rhel7stig_dconf_available
       - rhel_07_010070
   tags:
       - RHEL-07-010070
-      - notimplemented
 
 - name: "MEDIUM | RHEL-07-010081 | PATCH | The Red Hat Enterprise Linux operating system must prevent a user from overriding the screensaver lock-delay setting for the graphical user interface."
-  command: "true"
-  changed_when: no
+  copy:
+      dest: /etc/dconf/db/local.d/locks/session_rhel_07_010081
+      content: |
+          /org/gnome/desktop/screensaver/lock-delay
+      mode: '0644'
+  notify: dconf update
   when:
-      - rhel7stig_gui
+      - rhel7stig_dconf_available
       - rhel_07_010081
   tags:
       - RHEL-07-010081
-      - notimplemented
 
 - name: "MEDIUM | RHEL-07-010082 | PATCH | The Red Hat Enterprise Linux operating system must prevent a user from overriding the session idle-delay setting for the graphical user interface."
-  command: "true"
-  changed_when: no
+  copy:
+      dest: /etc/dconf/db/local.d/locks/session_rhel_07_010082
+      content: |
+          /org/gnome/desktop/session/idle-delay
+      mode: '0644'
+  notify: dconf update
   when:
-      - rhel7stig_gui
+      - rhel7stig_dconf_available
       - rhel_07_010082
   tags:
       - RHEL-07-010082
-      - notimplemented
 
-- name: "MEDIUM | RHEL-07-010090 | PATCH | The Red Hat Enterprise Linux operating system must have the screen package installed."
-  yum:
-      name: screen
-      state: present
+- name: "MEDIUM | RHEL-07-010090 | The Red Hat Enterprise Linux operating system must have the screen package installed."
+  block:
+      - name: "MEDIUM | RHEL-07-010090 | AUDIT | The Red Hat Enterprise Linux operating system must have the screen package installed. Check for screen or tmux"
+        command: rpm -q screen tmux
+        check_mode: no
+        register: rhel_07_010090_audit
+        changed_when: rhel_07_010090_audit.rc > 1
+        failed_when: no
+
+      - name: "MEDIUM | RHEL-07-010090 | PATCH | The Red Hat Enterprise Linux operating system must have the screen package installed."
+        yum:
+            name: "{{ rhel7stig_screen_package }}"
+            state: present
+        when:
+            - rhel_07_010090_audit is changed or
+              rhel7stig_force_exact_packages
   when: rhel_07_010090
   tags:
       - RHEL-07-010090
 
 - name: "MEDIUM | RHEL-07-010100 | PATCH | The Red Hat Enterprise Linux operating system must initiate a session lock for the screensaver after a period of inactivity for graphical user interfaces."
-  command: "true"
-  changed_when: no
+  copy:
+      dest: /etc/dconf/db/local.d/00-screensaver_rhel_07_010100
+      content: |
+          [org/gnome/desktop/screensaver]
+          idle-activation-enabled=true
+      mode: '0644'
+  notify: dconf update
   when:
-      - rhel7stig_gui
+      - rhel7stig_dconf_available
       - rhel_07_010100
   tags:
       - RHEL-07-010100
-      - notimplemented
 
 - name: "MEDIUM | RHEL-07-010101 | PATCH | The Red Hat Enterprise Linux operating system must prevent a user from overriding the screensaver idle-activation-enabled setting for the graphical user interface."
-  command: "true"
-  changed_when: no
+  copy:
+      dest: /etc/dconf/db/local.d/locks/session_rhel_07_010101
+      content: |
+          /org/gnome/desktop/screensaver/idle-activation-enabled
+      mode: '0644'
+  notify: dconf update
   when:
-      - rhel7stig_gui
+      - rhel7stig_dconf_available
       - rhel_07_010101
   tags:
       - RHEL-07-010101
-      - notimplemented
 
 - name: "MEDIUM | RHEL-07-010110 | PATCH | The Red Hat Enterprise Linux operating system must initiate a session lock for graphical user interfaces when the screensaver is activated."
-  command: "true"
-  changed_when: no
+  copy:
+      dest: /etc/dconf/db/local.d/00-screensaver_rhel_07_010110
+      content: |
+          [org/gnome/desktop/screensaver]
+          lock-delay=uint32 5
+      mode: '0644'
+  notify: dconf update
   when:
-      - rhel7stig_gui
+      - rhel7stig_dconf_available
       - rhel_07_010110
   tags:
       - RHEL-07-010110
-      - notimplemented
 
 - name: "MEDIUM | RHEL-07-010119 | PATCH | The Red Hat Enterprise Linux operating system must be configured so that when passwords are changed or new passwords are established, pwquality must be used."
   lineinfile:
@@ -637,6 +690,7 @@
 - name: "MEDIUM | RHEL-07-020100 | PATCH | The Red Hat Enterprise Linux operating system must be configured to disable USB mass storage."
   lineinfile:
       dest: /etc/modprobe.d/blacklist.conf
+      insertafter: "{{ item.insertafter }}"
       regexp: "{{ item.regexp }}"
       line: "{{ item.line }}"
       create: yes
@@ -644,10 +698,12 @@
       group: root
       mode: "0644"
   with_items:
-      - regexp: "^(#)?blacklist usb-storage(\\s|$)"
+      - insertafter: "^#blacklist usb-storage(\\s+|$)"
+        regexp: "^blacklist usb-storage(\\s+|$)"
         line: 'blacklist usb-storage'
-      - regexp: "^(#)?install usb-storage"
-        line: 'install usb-storage /bin/false'
+      - insertafter: "^#install usb-storage"
+        regexp: "^install usb-storage"
+        line: install usb-storage /bin/true
   when: rhel_07_020100
   tags:
       - RHEL-07-020100
@@ -656,12 +712,20 @@
 - name: "MEDIUM | RHEL-07-020101 | PATCH | The Red Hat Enterprise Linux operating system must be configured so that the Datagram Congestion Control Protocol (DCCP) kernel module is disabled unless required."
   lineinfile:
       dest: /etc/modprobe.d/nodccp.conf
-      regexp: "^(#)?install dccp /bin/true(\\s|$)"
-      line: 'install dccp /bin/true'
+      insertafter: "{{ item.insertafter }}"
+      regexp: "{{ item.regexp }}"
+      line: "{{ item.line }}"
       create: yes
       owner: root
       group: root
       mode: "0644"
+  with_items:
+      - insertafter: ^#blacklist dccp
+        regexp: ^blacklist dccp(\s+|$)
+        line: blacklist dccp
+      - insertafter: ^#install dccp
+        regexp: "^install dccp "
+        line: install dccp /bin/true
   when: rhel_07_020101
   tags:
       - RHEL-07-020101
@@ -881,13 +945,63 @@
       - RHEL-07-020330
       - complexity-high
 
-- name: "MEDIUM | RHEL-07-020600 | PATCH | The Red Hat Enterprise Linux operating system must be configured so that all local interactive users have a home directory assigned in the /etc/passwd file."
-  command: "true"
-  changed_when: no
-  when: rhel_07_020600
+- name: "MEDIUM | RHEL-07-020600 | The Red Hat Enterprise Linux operating system must be configured so that all local interactive users have a home directory assigned in the /etc/passwd file."
+  block:
+      - name: capture audit task for missing homedirs
+        block: &r7s_homedir_audit
+            - name: "MEDIUM | RHEL-07-020600 | AUDIT | The Red Hat Enterprise Linux operating system must be configured so that all local interactive users have a home directory assigned in the /etc/passwd file."
+              shell: set -o pipefail ; pwck -r | grep -P {{ ld_regex | quote }}
+              check_mode: no
+              register: rhel7stig_users_missing_home
+              changed_when: rhel7stig_07_20600_audit | length > 0
+              # failed_when: 0: success, 1: no grep match, 2: pwck found something
+              failed_when: rhel7stig_users_missing_home.rc not in [0,1,2]
+        when:
+            - rhel7stig_disruptive
+        tags:
+            - disruption-high
+
+      ### NOTE: due to https://github.com/ansible/ansible/issues/24862 This is a shell command, and is quite frankly less than ideal.
+      - name: "MEDIUM | RHEL-07-020600 | PATCH | The Red Hat Enterprise Linux operating system must be configured so that all local interactive users have a home directory assigned in the /etc/passwd file."
+        command: "mkhomedir_helper {{ item }}"
+        check_mode: "{{ rhel7stig_disruptive_check_mode }}"
+        with_items: "{{ rhel7stig_07_20600_audit | map(attribute='id') | list }}"
+        when:
+            - rhel7stig_users_missing_home is changed
+            - rhel7stig_disruptive  # not technically required
+        tags:
+            - disruption-high
+
+      ### NOTE: Now we need to address that SELINUX will not let mkhomedir_helper create home directories for UUID < 500, so the ftp user will still show up in a pwck. Not sure this is needed, as the ftp user is removed in rhel7stig_unnecessary_accounts. However these next two tasks won't make any changes if the system accounts are removed previously in RHEL-07-020270.
+      ### ^ Likely doesn't matter as 020620 defines "local interactive users" as those w/ uid 1000-4999
+      - name: replay audit task
+        block: *r7s_homedir_audit
+        when:
+            - rhel7stig_complex
+        tags:
+            - complexity-high
+
+      # CAUTION: debug loops don't show changed since 2.4:
+      # Fix: https://github.com/ansible/ansible/pull/59958
+      - name: "MEDIUM | RHEL-07-020600 | AUDIT | The Red Hat Enterprise Linux operating system must be configured so that all local interactive users have a home directory assigned in the /etc/passwd file."
+        debug: msg="You will need to mkdir -p {{ item }} and chown properly to the correct owner and group."
+        with_items: "{{ rhel7stig_07_20600_audit | map(attribute='dir') | list }}"
+        changed_when: rhel7stig_audit_complex
+        when:
+            - rhel7stig_users_missing_home is changed
+            - rhel7stig_complex  # not technically required
+        tags:
+            - complexity-high
+  vars:
+      ld_regex: >-
+          ^user '(?P<user>.*)': directory '(?P<dir>.*)' does not exist$
+      ld_users: "{{ rhel7stig_users_missing_home.stdout_lines | map('regex_replace', ld_regex, '\\g<user>') | list }}"
+      rhel7stig_07_20600_audit: "{{ rhel7stig_passwd | selectattr('uid', '>=', 1000) | selectattr('id', 'in', ld_users) | list }}"
+  when:
+      - rhel_07_020600
   tags:
       - RHEL-07-020600
-      - notimplemented
+
 
 - name: "MEDIUM | RHEL-07-020610 | PATCH | The Red Hat Enterprise Linux operating system must be configured so that all local interactive user accounts, upon creation, are assigned a home directory."
   lineinfile:
@@ -1882,7 +1996,6 @@
 - name: "MEDIUM | RHEL-07-040300 | PATCH | The Red Hat Enterprise Linux operating system must be configured so that all networked systems have SSH installed."
   yum:
       name:
-          - openssh-clients
           - openssh-server
       state: present
   when:
@@ -2211,15 +2324,6 @@
   tags:
       - RHEL-07-040500
       - chronyd
-
-- name: "MEDIUM | RHEL-07-040510 | PATCH | The operating system must protect against or limit the effects of Denial of Service (DoS) attacks by validating the operating system is implementing rate-limiting measures on impacted network interfaces."
-  command: "true"
-  changed_when: no
-  when: rhel_07_040510
-  tags:
-      - RHEL-07-040510
-      - firewall
-      - notimplemented
 
 - name: "MEDIUM | RHEL-07-040520 | PATCH | The Red Hat Enterprise Linux operating system must protect against or limit the effects of Denial of Service (DoS) attacks by validating the operating system is implementing rate-limiting measures on impacted network interfaces."
   yum:
